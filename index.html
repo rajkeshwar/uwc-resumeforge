@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ResumeForge – ATS Resume Builder</title>
+<script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Cormorant+Garamond:wght@300;400;600;700&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+/* ===================== APP UI ===================== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--sidebar:#161b22;--border:#30363d;--tp:#e6edf3;
+  --ts:#8b949e;--tm:#6e7681;--accent:#58a6ff;--success:#3fb950;
+  --btn:#21262d;--btnb:#30363d;--mono:'JetBrains Mono',monospace;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tp);font-family:var(--mono)}
+.app-header{display:flex;align-items:center;gap:10px;padding:0 14px;height:50px;background:var(--sidebar);border-bottom:1px solid var(--border);z-index:100;flex-shrink:0}
+.logo{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;letter-spacing:-.3px;white-space:nowrap}
+.logo-mark{width:26px;height:26px;background:linear-gradient(135deg,#58a6ff,#bc8cff);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff}
+.hd{width:1px;height:22px;background:var(--border);flex-shrink:0}
+.hlabel{font-size:10px;color:var(--tm);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap}
+.fmt-sel{background:var(--btn);border:1px solid var(--btnb);color:var(--tp);padding:5px 10px;border-radius:6px;font-size:12px;font-family:var(--mono);cursor:pointer;min-width:190px;transition:border-color .15s}
+.fmt-sel:hover,.fmt-sel:focus{border-color:var(--accent);outline:none}
+.btn{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;font-size:12px;font-family:var(--mono);font-weight:500;cursor:pointer;border:1px solid var(--btnb);background:var(--btn);color:var(--tp);transition:all .15s;white-space:nowrap}
+.btn:hover{background:var(--border);border-color:var(--accent);color:var(--accent)}
+.btn-pdf{background:#196c2e;border-color:var(--success);color:var(--success)}
+.btn-pdf:hover{background:#238636;color:#fff}
+.btn-doc{background:#1c3461;border-color:#58a6ff;color:#58a6ff}
+.btn-doc:hover{background:#1f4080;color:#fff}
+.hactions{display:flex;align-items:center;gap:7px;margin-left:auto}
+.app-main{display:flex;height:calc(100vh - 50px);overflow:hidden}
+.editor-panel{width:44%;min-width:280px;display:flex;flex-direction:column;border-right:1px solid var(--border);background:var(--bg)}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:var(--sidebar);border-bottom:1px solid var(--border);font-size:10px;color:var(--tm);text-transform:uppercase;letter-spacing:.8px;flex-shrink:0}
+.pbadge{font-size:10px;padding:2px 6px;border-radius:8px;background:rgba(88,166,255,.1);color:var(--accent);border:1px solid rgba(88,166,255,.2)}
+.panel-badges{display:flex;gap:5px}
+.editor-ta{flex:1;width:100%;background:var(--bg);color:#c9d1d9;border:none;outline:none;resize:none;padding:14px;font-family:var(--mono);font-size:12.5px;line-height:1.65;tab-size:2;overflow-y:auto}
+.editor-ta::-webkit-scrollbar{width:5px}
+.editor-ta::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.status-bar{display:flex;align-items:center;gap:10px;padding:4px 12px;background:var(--sidebar);border-top:1px solid var(--border);font-size:10px;color:var(--tm);flex-shrink:0}
+.sdot{width:5px;height:5px;border-radius:50%;background:var(--success);flex-shrink:0}
+.resize-h{width:4px;background:var(--border);cursor:col-resize;transition:background .15s;flex-shrink:0}
+.resize-h:hover,.resize-h.active{background:var(--accent)}
+.preview-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#d4d4d4}
+.preview-toolbar{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--sidebar);border-bottom:1px solid var(--border);font-size:10px;color:var(--tm);text-transform:uppercase;letter-spacing:.8px;flex-shrink:0}
+.preview-scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;padding:20px 12px 32px;gap:0;background:#d4d4d4}
+.preview-scroll::-webkit-scrollbar{width:6px}
+.preview-scroll::-webkit-scrollbar-thumb{background:#aaa;border-radius:3px}
+.resume-page{width:210mm;background:#fff;box-shadow:0 2px 20px rgba(0,0,0,.3);position:relative}
+.page-break-hint{width:210mm;height:1px;background:rgba(255,80,80,.4);position:relative;margin:0}
+.page-break-hint::before{content:'— page break —';position:absolute;right:4px;top:-9px;font-size:9px;color:rgba(200,60,60,.7);font-family:var(--mono)}
+
+/* Export Loading */
+.xloading{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:14px;color:#fff;font-family:var(--mono);font-size:13px}
+.xloading.show{display:flex}
+.spinner{width:30px;height:30px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Print Tip Modal */
+.print-tip{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;align-items:center;justify-content:center}
+.print-tip.show{display:flex}
+.print-tip-box{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:24px 28px;max-width:420px;width:90%;font-family:var(--mono)}
+.print-tip-box h3{font-size:13px;color:#e6edf3;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.print-tip-steps{list-style:none;margin-bottom:18px}
+.print-tip-steps li{font-size:11.5px;color:#8b949e;padding:5px 0;border-bottom:1px solid #21262d;display:flex;align-items:flex-start;gap:8px}
+.print-tip-steps li:last-child{border-bottom:none}
+.print-tip-steps .step-num{background:#58a6ff;color:#000;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;margin-top:1px}
+.print-tip-steps code{background:#21262d;border-radius:3px;padding:1px 5px;color:#79c0ff;font-family:var(--mono);font-size:10.5px}
+.print-tip-actions{display:flex;gap:8px;justify-content:flex-end}
+.tip-btn-cancel{background:transparent;border:1px solid #30363d;color:#8b949e;padding:6px 14px;border-radius:6px;font-size:12px;font-family:var(--mono);cursor:pointer}
+.tip-btn-cancel:hover{border-color:#58a6ff;color:#58a6ff}
+.tip-btn-go{background:#196c2e;border:1px solid #3fb950;color:#3fb950;padding:6px 16px;border-radius:6px;font-size:12px;font-family:var(--mono);cursor:pointer;font-weight:500}
+.tip-btn-go:hover{background:#238636;color:#fff}
+
+/* ===================== TEMPLATE 1: CLASSIC ===================== */
+.tpl-classic{font-family:'Source Serif 4','Georgia','Times New Roman',serif;font-size:10.5pt;line-height:1.55;color:#1a1a1a;padding:18mm 18mm 14mm}
+.tpl-classic .rh{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2.5px solid #1a1a1a;padding-bottom:5mm;margin-bottom:4mm}
+.tpl-classic .rh-left{flex:1;min-width:0}
+.tpl-classic h1{font-size:23pt;font-weight:700;color:#0a0a0a;margin-bottom:1.5mm;line-height:1.1;letter-spacing:-.2px}
+.tpl-classic .rsubtitle{font-size:10.5pt;color:#333;font-style:italic;margin-bottom:1.5mm;font-weight:400}
+.tpl-classic .rcontact{font-size:9.5pt;color:#444;margin-bottom:0;line-height:1.6}
+.tpl-classic .rcontact a{color:#1a1a1a;text-decoration:none}
+.tpl-classic .photo{width:26mm;height:26mm;border-radius:50%;object-fit:cover;border:2px solid #ddd;margin-left:8mm;flex-shrink:0}
+.tpl-classic .rsection{margin-top:4mm}
+.tpl-classic h2{font-size:9.5pt;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#0a0a0a;margin-bottom:1.5mm;border-bottom:1px solid #ccc;padding-bottom:.8mm}
+.tpl-classic h3{font-size:10.5pt;font-weight:700;color:#1a1a1a;margin-bottom:.3mm;margin-top:2mm}
+.tpl-classic h4{font-size:9.5pt;font-weight:400;font-style:italic;color:#444;margin-bottom:.8mm}
+.tpl-classic ul{margin:.5mm 0 1.5mm;padding-left:5mm}
+.tpl-classic li{margin-bottom:.4mm;font-size:10pt}
+.tpl-classic p{margin-bottom:1.2mm;font-size:10pt}
+.tpl-classic strong{font-weight:700}
+.tpl-classic em{font-style:italic;color:#444}
+
+/* ===================== TEMPLATE 2: MODERN ===================== */
+.tpl-modern{font-family:'DM Sans','Helvetica Neue',sans-serif;font-size:10pt;line-height:1.5;color:#1f2937}
+.tpl-modern .rh-band{background:#1e3659;padding:12mm 18mm 9mm;color:#fff;display:flex;justify-content:space-between;align-items:center}
+.tpl-modern .rh-band p{color:rgba(255,255,255,.75)!important;margin-bottom:0}
+.tpl-modern .rh-band strong{color:#fff!important;font-weight:500}
+.tpl-modern .rh-band em{color:rgba(255,255,255,.65)!important;font-style:italic}
+.tpl-modern .rh-band a{color:rgba(255,255,255,.85)!important;text-decoration:none}
+.tpl-modern .rh-left{flex:1;min-width:0}
+.tpl-modern h1{font-size:22pt;font-weight:600;color:#fff;margin-bottom:1mm;letter-spacing:-.3px}
+.tpl-modern .rsubtitle{font-size:10pt;color:rgba(255,255,255,.8);margin-bottom:1mm;font-weight:300}
+.tpl-modern .rcontact{font-size:8.5pt;color:rgba(255,255,255,.7);line-height:1.6}
+.tpl-modern .rcontact a{color:rgba(255,255,255,.85);text-decoration:none}
+.tpl-modern .photo{width:22mm;height:22mm;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.35);margin-left:8mm;flex-shrink:0}
+.tpl-modern .rbody{padding:8mm 18mm 14mm}
+.tpl-modern .rsection{margin-top:4mm}
+.tpl-modern h2{font-size:8.5pt;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#1e3659;margin-bottom:1.5mm;padding-left:2.5mm;border-left:3px solid #1e3659}
+.tpl-modern h3{font-size:10pt;font-weight:600;color:#111827;margin-bottom:.2mm;margin-top:2.5mm}
+.tpl-modern h4{font-size:9pt;color:#6b7280;font-weight:400;margin-bottom:.8mm}
+.tpl-modern ul{margin:.5mm 0 1.5mm;padding-left:4.5mm}
+.tpl-modern li{margin-bottom:.4mm;font-size:9.5pt}
+.tpl-modern p{margin-bottom:1mm;font-size:9.5pt;color:#374151}
+.tpl-modern strong{font-weight:600;color:#111827}
+.tpl-modern em{color:#6b7280;font-style:normal;font-size:9pt}
+
+/* ===================== TEMPLATE 3: EXECUTIVE ===================== */
+.tpl-executive{font-family:'IBM Plex Sans','Helvetica Neue',sans-serif;font-size:10pt;line-height:1.5;color:#1a1a1a}
+.tpl-executive .rh{display:flex;justify-content:space-between;align-items:flex-start;padding:16mm 20mm 6mm;border-bottom:2.5px solid #b89a3e}
+.tpl-executive .rh-left{flex:1;min-width:0;padding-right:10mm}
+.tpl-executive .rh-right{flex-shrink:0;text-align:right}
+.tpl-executive h1{font-size:28pt;font-weight:300;color:#0a0a0a;margin-bottom:1mm;letter-spacing:-.5px;line-height:1.1}
+.tpl-executive h1 span{font-weight:700}
+.tpl-executive .rsubtitle{font-size:10.5pt;color:#555;font-weight:300;margin-bottom:2mm;font-style:italic}
+.tpl-executive .rcontact{font-size:9pt;color:#444;line-height:1.75;text-align:left}
+.tpl-executive .rcontact a{color:#1a1a1a;text-decoration:none}
+.tpl-executive .photo{width:22mm;height:22mm;border-radius:50%;object-fit:cover;border:2px solid #b89a3e;display:block;margin-left:auto;margin-bottom:2mm}
+.tpl-executive .rbody{padding:5mm 20mm 14mm}
+.tpl-executive .rsection{margin-top:4mm}
+.tpl-executive h2{font-size:8pt;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#b89a3e;margin-bottom:1.5mm;margin-top:5mm;padding-bottom:1mm;border-bottom:1px solid #e8d9a0}
+.tpl-executive h3{font-size:10.5pt;font-weight:600;color:#0a0a0a;margin-bottom:.3mm;margin-top:2mm}
+.tpl-executive h4{font-size:9.5pt;color:#666;font-weight:400;margin-bottom:.8mm}
+.tpl-executive ul{margin:.5mm 0 1.5mm;padding-left:4.5mm}
+.tpl-executive li{margin-bottom:.4mm;font-size:9.5pt}
+.tpl-executive p{margin-bottom:1.2mm;font-size:9.5pt}
+.tpl-executive strong{font-weight:600}
+.tpl-executive em{color:#666;font-style:normal;font-size:9pt}
+
+/* ===================== TEMPLATE 4: COMPACT ===================== */
+.tpl-compact{font-family:'IBM Plex Sans','Helvetica Neue',sans-serif;font-size:9pt;line-height:1.38;color:#1a1a1a;padding:9mm 13mm 9mm}
+.tpl-compact .rh{display:flex;justify-content:space-between;align-items:center;padding-bottom:2.5mm;margin-bottom:2mm;border-bottom:1.5px solid #333}
+.tpl-compact .rh-left{flex:1;min-width:0}
+.tpl-compact h1{font-size:16pt;font-weight:700;color:#0a0a0a;margin-bottom:.7mm;line-height:1.1}
+.tpl-compact .rsubtitle{font-size:9pt;color:#333;font-weight:500;margin-bottom:.5mm}
+.tpl-compact .rcontact{font-size:8pt;color:#555;line-height:1.5}
+.tpl-compact .rcontact a{color:#1a1a1a;text-decoration:none}
+.tpl-compact .photo{width:17mm;height:17mm;object-fit:cover;border:1.5px solid #ccc;margin-left:5mm;flex-shrink:0;border-radius:3px}
+.tpl-compact .rsection{margin-top:2.5mm}
+.tpl-compact h2{font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#fff;background:#777;padding:.7mm 2mm;margin-bottom:1.5mm;margin-top:3mm}
+.tpl-compact h3{font-size:9pt;font-weight:700;color:#0a0a0a;margin-bottom:.1mm;margin-top:1.5mm}
+.tpl-compact h4{font-size:8pt;color:#555;font-weight:400;margin-bottom:.5mm}
+.tpl-compact ul{margin:.3mm 0 1mm;padding-left:4mm}
+.tpl-compact li{margin-bottom:.25mm;font-size:8.5pt;line-height:1.33}
+.tpl-compact p{margin-bottom:.7mm;font-size:8.5pt}
+.tpl-compact strong{font-weight:600}
+.tpl-compact em{color:#555;font-style:normal;font-size:8pt}
+
+/* ===================== TEMPLATE 5: MINIMAL ATS ===================== */
+.tpl-ats{font-family:Arial,Helvetica,sans-serif;font-size:11pt;line-height:1.5;color:#000;padding:18mm 20mm}
+.tpl-ats .rh{text-align:center;padding-bottom:4mm;border-bottom:2px solid #000;margin-bottom:3mm}
+.tpl-ats h1{font-size:16pt;font-weight:bold;color:#000;margin-bottom:2mm;font-family:Arial,sans-serif}
+.tpl-ats .rsubtitle{font-size:11pt;color:#000;font-weight:bold;margin-bottom:1mm}
+.tpl-ats .rcontact{font-size:9.5pt;color:#000;line-height:1.6}
+.tpl-ats .rcontact a{color:#000;text-decoration:none}
+.tpl-ats .photo{display:none}
+.tpl-ats .rsection{margin-top:3.5mm}
+.tpl-ats h2{font-size:11pt;font-weight:bold;text-transform:uppercase;color:#000;margin-top:5mm;margin-bottom:1.5mm;border-bottom:1px solid #000;padding-bottom:.5mm;font-family:Arial,sans-serif}
+.tpl-ats h3{font-size:11pt;font-weight:bold;color:#000;margin-bottom:.2mm;margin-top:2.5mm;font-family:Arial,sans-serif}
+.tpl-ats h4{font-size:10.5pt;color:#000;font-weight:normal;font-style:italic;margin-bottom:.8mm}
+.tpl-ats ul{margin:.5mm 0 2mm;padding-left:6mm}
+.tpl-ats li{margin-bottom:.8mm;font-size:10.5pt}
+.tpl-ats p{margin-bottom:1.2mm;font-size:10.5pt}
+.tpl-ats strong{font-weight:bold}
+.tpl-ats em{font-style:italic}
+
+
+/* ===================== TEMPLATE 6: ELEGANT GREEN ===================== */
+.tpl-fancy1{font-family:'DM Sans','Helvetica Neue',sans-serif;font-size:10pt;line-height:1.55;color:#222;background:#fff}
+
+/* ── Header: dark navy band ── */
+.tpl-fancy1 .rh-top{
+  background:#2c3e50;
+  padding:8mm 10mm 8mm 10mm;
+  display:flex;align-items:flex-start;gap:8mm;
+  min-height:46mm;
+}
+.tpl-fancy1 .photo{
+  width:36mm;height:36mm;border-radius:50%;object-fit:cover;
+  border:3px solid rgba(255,255,255,.95);flex-shrink:0;
+  margin-top:0;align-self:center;
+}
+.tpl-fancy1 .photo-placeholder{
+  width:36mm;height:36mm;border-radius:50%;
+  background:rgba(255,255,255,.15);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;color:rgba(255,255,255,.4);align-self:center;
+}
+.tpl-fancy1 .rh-info{flex:1;min-width:0;padding-top:1mm}
+.tpl-fancy1 h1{
+  font-size:26pt;font-weight:800;color:#fff;
+  margin-bottom:1.5mm;letter-spacing:.5px;line-height:1.05;text-transform:uppercase;
+}
+.tpl-fancy1 .rsubtitle{
+  font-size:12pt;color:#5bc87a;font-weight:500;
+  margin-bottom:3.5mm;letter-spacing:.2px;font-style:normal;
+}
+.tpl-fancy1 .rh-summary{
+  font-size:9pt;color:rgba(255,255,255,.88);line-height:1.68;
+  text-align:justify;max-width:128mm;
+}
+.tpl-fancy1 .rh-summary p{
+  color:rgba(255,255,255,.88)!important;
+  font-size:9pt;margin-bottom:0;text-align:justify;
+}
+.tpl-fancy1 .rh-top strong,.tpl-fancy1 .rh-top em{color:rgba(255,255,255,.95)!important}
+
+/* ── Contact bar ── */
+.tpl-fancy1 .rcontact-bar{
+  background:#3d5166;
+  padding:2.8mm 10mm;
+  display:flex;gap:0;flex-wrap:nowrap;align-items:center;
+  border-top:1px solid rgba(255,255,255,.07);
+  justify-content:flex-start;
+}
+.tpl-fancy1 .rcontact-item{
+  display:flex;align-items:center;gap:2mm;
+  font-size:8.5pt;color:rgba(255,255,255,.9);
+  white-space:nowrap;padding-right:6mm;
+}
+.tpl-fancy1 .rcontact-item a{color:rgba(255,255,255,.9);text-decoration:none}
+.tpl-fancy1 .rcontact-icon{
+  width:9px;height:9px;flex-shrink:0;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+/* legacy fallback – if raw contact HTML lands in bar */
+.tpl-fancy1 .rcontact-bar p{
+  margin:0;font-size:8.5pt;color:rgba(255,255,255,.88);
+  display:flex;align-items:center;gap:1.5mm;
+}
+.tpl-fancy1 .rcontact-bar a{color:rgba(255,255,255,.88);text-decoration:none}
+
+/* ── Two-column body ── */
+.tpl-fancy1 .rbody{display:flex;align-items:flex-start;min-height:160mm}
+.tpl-fancy1 .col-main{flex:1.3;padding:6mm 7mm 10mm 10mm;min-width:0}
+.tpl-fancy1 .col-side{flex:1;padding:6mm 10mm 10mm 4mm;min-width:0}
+
+/* ── Section headings: bold green, large ── */
+.tpl-fancy1 h2{
+  font-size:14pt;font-weight:700;color:#4db36b;
+  margin-bottom:2.5mm;margin-top:5.5mm;letter-spacing:.1px;
+}
+.tpl-fancy1 .col-main .rsection:first-child h2,
+.tpl-fancy1 .col-side .rsection:first-child h2{margin-top:0}
+
+/* ── Job/entry title ── */
+.tpl-fancy1 h3{
+  font-size:10.5pt;font-weight:700;color:#111;
+  margin-bottom:.5mm;margin-top:3.5mm;
+}
+/* Company italic + date right — same row via flex */
+.tpl-fancy1 h4{
+  font-size:9pt;color:#555;font-weight:400;font-style:italic;
+  margin-bottom:1.5mm;
+  display:flex;justify-content:space-between;align-items:baseline;gap:2mm;
+}
+.tpl-fancy1 h4 em{font-style:italic;color:#555;font-size:9pt;flex-shrink:0}
+
+/* ── Lists ── */
+.tpl-fancy1 ul{margin:.8mm 0 2mm;padding-left:5mm}
+.tpl-fancy1 li{margin-bottom:.6mm;font-size:9.5pt;list-style-type:disc;color:#222}
+
+/* ── Body text ── */
+.tpl-fancy1 p{margin-bottom:1.5mm;font-size:9.5pt;color:#2a2a2a;text-align:justify;line-height:1.6}
+.tpl-fancy1 strong{font-weight:700;color:#111}
+.tpl-fancy1 em{color:#555;font-style:italic;font-size:9pt}
+
+/* ── Side column tweaks ── */
+.tpl-fancy1 .col-side h3{
+  font-size:10pt;font-weight:700;color:#111;
+  margin-top:2.5mm;margin-bottom:.5mm;
+}
+.tpl-fancy1 .col-side li{font-size:9.5pt;list-style-type:disc;color:#2a2a2a}
+.tpl-fancy1 .col-side p{text-align:left}
+
+/* ===================== TEMPLATE 7: DARK SIDEBAR ===================== */
+.tpl-fancy2{font-family:'DM Sans','Helvetica Neue',sans-serif;font-size:10pt;line-height:1.5;color:#1a1a1a;display:flex;min-height:297mm}
+/* Sidebar */
+.tpl-fancy2 .sidebar{width:65mm;flex-shrink:0;background:#1c2636;padding:8mm 6mm 10mm;display:flex;flex-direction:column;align-items:center}
+.tpl-fancy2 .sidebar .photo{width:36mm;height:36mm;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.25);margin-bottom:4mm;flex-shrink:0}
+.tpl-fancy2 .sidebar .photo-placeholder{width:36mm;height:36mm;border-radius:50%;background:rgba(255,255,255,.1);margin-bottom:4mm;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;color:rgba(255,255,255,.35)}
+/* Name + subtitle in sidebar */
+.tpl-fancy2 .sb-name{font-size:15pt;font-weight:700;color:#fff;text-align:center;margin-bottom:1.5mm;line-height:1.2;word-break:break-word}
+.tpl-fancy2 .sb-subtitle{font-size:9pt;color:#5b9bd5;font-weight:400;text-align:center;margin-bottom:6mm}
+/* Sidebar section headings */
+.tpl-fancy2 .sidebar .sb-sec{width:100%;margin-top:5mm}
+.tpl-fancy2 .sidebar .sb-sec:first-of-type{margin-top:0}
+.tpl-fancy2 .sidebar h2{font-size:9pt;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#fff;margin-bottom:1.5mm;padding-bottom:1.5mm;border-bottom:1.5px solid rgba(255,255,255,.2);width:100%}
+/* Contact items in sidebar */
+.tpl-fancy2 .sidebar .sb-contact p{font-size:8.5pt;color:rgba(255,255,255,.8);margin-bottom:1.8mm;line-height:1.4;word-break:break-all}
+.tpl-fancy2 .sidebar .sb-contact a{color:rgba(255,255,255,.8);text-decoration:none}
+/* Sidebar list items */
+.tpl-fancy2 .sidebar ul{list-style:none;padding:0;margin:0;width:100%}
+.tpl-fancy2 .sidebar li{font-size:8.5pt;color:rgba(255,255,255,.82);padding:1mm 0;display:flex;align-items:flex-start;gap:2mm;line-height:1.4}
+.tpl-fancy2 .sidebar li::before{content:'○';color:#5b9bd5;flex-shrink:0;font-size:9pt;line-height:1.3}
+.tpl-fancy2 .sidebar p{font-size:8.5pt;color:rgba(255,255,255,.75);margin-bottom:1mm;width:100%}
+.tpl-fancy2 .sidebar a{color:rgba(255,255,255,.75);text-decoration:none}
+.tpl-fancy2 .sidebar strong{color:#fff;font-weight:600}
+/* Main content column */
+.tpl-fancy2 .maincol{flex:1;padding:8mm 9mm 10mm 9mm;min-width:0}
+/* Section headings: large bold uppercase with thick bottom border */
+.tpl-fancy2 .maincol h2{font-size:13.5pt;font-weight:800;text-transform:uppercase;color:#111;margin-bottom:2.5mm;margin-top:7mm;border-bottom:2.5px solid #111;padding-bottom:1.5mm;letter-spacing:.3px}
+.tpl-fancy2 .maincol .rsection:first-child h2{margin-top:0}
+/* Job title */
+.tpl-fancy2 .maincol h3{font-size:10.5pt;font-weight:700;color:#111;margin-bottom:.3mm;margin-top:3.5mm}
+/* Company left | Date right — same row */
+.tpl-fancy2 .maincol h4{font-size:9.5pt;color:#555;font-weight:400;margin-bottom:.8mm;display:flex;justify-content:space-between;flex-wrap:wrap;gap:2mm}
+.tpl-fancy2 .maincol ul{margin:.8mm 0 2mm;padding-left:4.5mm}
+.tpl-fancy2 .maincol li{margin-bottom:.6mm;font-size:9.5pt}
+.tpl-fancy2 .maincol p{margin-bottom:1.2mm;font-size:9.5pt;color:#222;text-align:justify}
+.tpl-fancy2 .maincol strong{font-weight:700;color:#111}
+.tpl-fancy2 .maincol em{color:#555;font-style:italic;font-size:9pt}
+
+/* Shared: hide raw hr */
+.rsection hr,.rh hr{display:none}
+h1+hr,h2+hr,p+hr{display:none!important}
+
+/* ===================== PRINT / PDF EXPORT ===================== */
+@media print {
+  @page { size: A4; margin: 0; }
+  html, body { margin: 0 !important; padding: 0 !important; }
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  .app-header, .editor-panel, .resize-h,
+  .preview-toolbar, .xloading, #photoInput { display: none !important; }
+  .app-main {
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+  .preview-panel {
+    overflow: visible !important;
+    display: block !important;
+    background: white !important;
+  }
+  .preview-scroll {
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+    display: block !important;
+    align-items: unset !important;
+  }
+  .resume-page {
+    box-shadow: none !important;
+    width: 210mm !important;
+    margin: 0 auto !important;
+    page-break-after: always;
+  }
+  /* Preserve fancy2 sidebar layout in print */
+  .tpl-fancy2 { display: flex !important; }
+  .tpl-fancy2 .sidebar { background: #1c2636 !important; }
+  .tpl-fancy1 .rh-top { background: #2c3e50 !important; }
+  .tpl-fancy1 .rcontact-bar { background: #3d5166 !important; }
+  .tpl-modern .rh-band { background: #1e3659 !important; }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="xloading" id="xl">
+  <div class="spinner"></div>
+  <span id="xltext">Generating...</span>
+</div>
+
+<!-- Print tip modal -->
+<div class="print-tip" id="printTip">
+  <div class="print-tip-box">
+    <h3>🖨️ Before you print — one quick step</h3>
+    <ul class="print-tip-steps">
+      <li><span class="step-num">1</span>In the print dialog, click <code>More settings</code></li>
+      <li><span class="step-num">2</span>Uncheck <code>Headers and footers</code></li>
+      <li><span class="step-num">3</span>Click <code>Save / Print</code> — done!</li>
+    </ul>
+    <div class="print-tip-actions">
+      <button class="tip-btn-cancel" onclick="document.getElementById('printTip').classList.remove('show')">Cancel</button>
+      <button class="tip-btn-go" onclick="document.getElementById('printTip').classList.remove('show'); doPrint()">Open Print Dialog →</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="photoInput" accept="image/*" style="display:none">
+
+<header class="app-header">
+  <div class="logo">
+    <div class="logo-mark">RF</div>
+    ResumeForge
+  </div>
+  <div class="hd"></div>
+  <span class="hlabel">Template</span>
+  <select class="fmt-sel" id="tplSel">
+    <optgroup label="── Professional ──">
+      <option value="classic">📄  Classic Standard</option>
+      <option value="modern">🎨  Modern Blue</option>
+      <option value="executive">⭐  Executive Gold</option>
+      <option value="compact">⚡  Compact Max</option>
+      <option value="ats">🤖  Minimal ATS</option>
+    </optgroup>
+    <optgroup label="── Fancy ──">
+      <option value="fancy1">🌿  Elegant Green</option>
+      <option value="fancy2">🌑  Dark Sidebar</option>
+    </optgroup>
+  </select>
+  <div class="hd"></div>
+  <div class="hactions">
+    <button class="btn" onclick="document.getElementById('photoInput').click()">📷 Photo</button>
+    <button class="btn btn-pdf" onclick="exportPDF()">⬇ Export PDF (Print)</button>
+    <button class="btn btn-doc" onclick="exportDOCX()">📝 Export DOCX</button>
+  </div>
+</header>
+
+<main class="app-main">
+  <div class="editor-panel" id="editorPanel">
+    <div class="panel-hdr">
+      <span>✏ Markdown Editor</span>
+      <div class="panel-badges">
+        <span class="pbadge">Markdown</span>
+        <span class="pbadge" id="wcount">— words</span>
+      </div>
+    </div>
+    <textarea class="editor-ta" id="mdEditor" spellcheck="false" placeholder="Write your resume in Markdown…"></textarea>
+    <div class="status-bar">
+      <div class="sdot"></div>
+      <span>ATS Compliant</span>
+      <span style="margin-left:auto;font-size:10px" id="ccount">0 chars</span>
+    </div>
+  </div>
+
+  <div class="resize-h" id="rh"></div>
+
+  <div class="preview-panel">
+    <div class="preview-toolbar">
+      <span>👁 Resume Preview</span>
+      <div class="panel-badges">
+        <span class="pbadge" id="pgcount">— pages</span>
+        <span class="pbadge" id="tplname">Classic Standard</span>
+      </div>
+    </div>
+    <div class="preview-scroll" id="previewScroll">
+      <div class="resume-page" id="resumePage"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ===================== SAMPLE RESUME =====================
+const SAMPLE = `# Alex Morgan
+**Senior Software Engineer | Full-Stack Development | Cloud & DevOps**
+
+New York, NY | +1 (555) 234-5678 | alex.morgan@email.com | [LinkedIn](https://linkedin.com/in/alexmorgan) | [GitHub](https://github.com/alexmorgan)
+
+---
+
+## Professional Summary
+
+Results-driven Software Engineer with 7+ years of experience building scalable web applications for fintech and SaaS companies. Proficient in React, Node.js, and cloud-native architectures. Passionate about clean code, team mentorship, and delivering high-impact products on time.
+
+## Work Experience
+
+### Senior Software Engineer – Finova Technologies
+*March 2021 – Present | New York, NY*
+
+- Led re-architecture of core payments platform, reducing transaction latency by **45%**
+- Mentored a team of 5 engineers, achieving **100% sprint completion** over 6 consecutive quarters
+- Introduced automated testing suite raising code coverage from 40% to **92%**
+
+### Software Engineer – CloudBase Inc.
+*July 2018 – February 2021 | Austin, TX*
+
+- Built real-time analytics dashboard serving **200K+ daily active users**
+- Reduced AWS infrastructure costs by **30%** through resource optimisation and autoscaling
+- Collaborated with product and design to ship 12 major features across two product lines
+
+### Junior Developer – Brightpath Solutions
+*June 2016 – June 2018 | Boston, MA*
+
+- Developed REST APIs consumed by 3 client-facing mobile applications
+- Improved page load times by **60%** via lazy loading and CDN integration
+
+## Education
+
+**B.Sc. Computer Science** – University of Michigan | 2016
+
+## Certifications
+
+- AWS Certified Solutions Architect – Associate (2022)
+- Google Professional Cloud Developer (2023)
+
+## Skills
+
+**Languages & Frameworks:** JavaScript, TypeScript, Python, React, Node.js, Express, Next.js
+
+**Cloud & DevOps:** AWS, GCP, Docker, Kubernetes, GitHub Actions, Terraform
+
+**Databases:** PostgreSQL, MongoDB, Redis
+
+**Tools:** Jira, Figma, Datadog, Storybook
+
+## Languages
+
+- **English:** Native
+- **Spanish:** Intermediate (B1)
+- **French:** Basic (A2)
+
+## Hobbies
+
+- Open-source contributions
+- Hiking & trail running
+- Technical blogging`;
+
+// ===================== STATE =====================
+let currentTpl = 'classic';
+let photoUrl = null;
+
+const tplNames = {
+  classic:'Classic Standard', modern:'Modern Blue',
+  executive:'Executive Gold', compact:'Compact Max', ats:'Minimal ATS',
+  fancy1:'Elegant Green', fancy2:'Dark Sidebar'
+};
+
+// ===================== MARKDOWN PARSER =====================
+function parseMd(md) {
+  marked.setOptions({ breaks: true, gfm: true });
+  return marked.parse(md);
+}
+
+// Parse structured resume data from markdown
+function parseResume(md) {
+  const html = parseMd(md);
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  const nodes = Array.from(div.children);
+
+  let name = '', subtitle = '', contact = [], sections = [];
+  let inHeader = true, currentSection = null;
+
+  for (let i = 0; i < nodes.length; i++) {
+    const n = nodes[i];
+    if (n.tagName === 'H1') { name = n.innerHTML; continue; }
+    if (n.tagName === 'HR') { inHeader = false; continue; }
+    if (n.tagName === 'H2') {
+      inHeader = false;
+      currentSection = { title: n.innerHTML, items: [] };
+      sections.push(currentSection);
+      continue;
+    }
+    if (inHeader) {
+      // First <p> after h1: subtitle (bold line)
+      if (!subtitle && n.tagName === 'P') { subtitle = n.innerHTML; continue; }
+      contact.push(n.outerHTML);
+    } else if (currentSection) {
+      currentSection.items.push(n.outerHTML);
+    }
+  }
+  return { name, subtitle, contact: contact.join(''), sections };
+}
+
+// ===================== TEMPLATE RENDERERS =====================
+
+function renderClassic(data) {
+  const { name, subtitle, contact, sections } = data;
+  const ph = photoUrl ? `<img class="photo" src="${photoUrl}" alt="Photo">` : '';
+  return `
+<div class="tpl-classic">
+  <div class="rh">
+    <div class="rh-left">
+      <h1>${name}</h1>
+      <p class="rsubtitle">${subtitle}</p>
+      <div class="rcontact">${contact}</div>
+    </div>
+    ${ph}
+  </div>
+  ${sections.map(s=>`<div class="rsection"><h2>${s.title}</h2>${s.items.join('')}</div>`).join('')}
+</div>`;
+}
+
+function renderModern(data) {
+  const { name, subtitle, contact, sections } = data;
+  const ph = photoUrl ? `<img class="photo" src="${photoUrl}" alt="Photo">` : '';
+  return `
+<div class="tpl-modern">
+  <div class="rh-band">
+    <div class="rh-left">
+      <h1>${name}</h1>
+      <p class="rsubtitle">${subtitle}</p>
+      <div class="rcontact">${contact}</div>
+    </div>
+    ${ph}
+  </div>
+  <div class="rbody">
+    ${sections.map(s=>`<div class="rsection"><h2>${s.title}</h2>${s.items.join('')}</div>`).join('')}
+  </div>
+</div>`;
+}
+
+function renderExecutive(data) {
+  const { name, subtitle, contact, sections } = data;
+  // Split name for styling: first word + rest
+  const nameParts = name.split(' ');
+  const firstName = nameParts[0];
+  const rest = nameParts.slice(1).join(' ');
+  const ph = photoUrl ? `<img class="photo" src="${photoUrl}" alt="Photo">` : '';
+  return `
+<div class="tpl-executive">
+  <div class="rh">
+    <div class="rh-left">
+      <h1>${firstName} <span>${rest}</span></h1>
+      <p class="rsubtitle">${subtitle}</p>
+      <div class="rcontact">${contact}</div>
+    </div>
+    ${ph ? `<div class="rh-right">${ph}</div>` : ''}
+  </div>
+  <div class="rbody">
+    ${sections.map(s=>`<div class="rsection"><h2>${s.title}</h2>${s.items.join('')}</div>`).join('')}
+  </div>
+</div>`;
+}
+
+function renderCompact(data) {
+  const { name, subtitle, contact, sections } = data;
+  const ph = photoUrl ? `<img class="photo" src="${photoUrl}" alt="Photo">` : '';
+  return `
+<div class="tpl-compact">
+  <div class="rh">
+    <div class="rh-left">
+      <h1>${name}</h1>
+      <p class="rsubtitle">${subtitle}</p>
+      <div class="rcontact">${contact}</div>
+    </div>
+    ${ph}
+  </div>
+  ${sections.map(s=>`<div class="rsection"><h2>${s.title}</h2>${s.items.join('')}</div>`).join('')}
+</div>`;
+}
+
+function renderATS(data) {
+  const { name, subtitle, contact, sections } = data;
+  return `
+<div class="tpl-ats">
+  <div class="rh">
+    <h1>${name}</h1>
+    <p class="rsubtitle">${subtitle}</p>
+    <div class="rcontact">${contact}</div>
+  </div>
+  ${sections.map(s=>`<div class="rsection"><h2>${s.title}</h2>${s.items.join('')}</div>`).join('')}
+</div>`;
+}
+
+// Keywords that route sections to the right column / sidebar
+const FANCY1_SIDE = ['skill','language','hobby','hobbies','interest','certification','cert'];
+const FANCY2_SIDEBAR = ['skill','language','hobby','hobbies','interest','contact','certification','cert'];
+
+function isSideSection(title, keywords) {
+  const t = title.toLowerCase();
+  return keywords.some(k => t.includes(k));
+}
+
+function renderFancy1(data) {
+  const { name, subtitle, contact, sections } = data;
+  const ph = photoUrl
+    ? `<img class="photo" src="${photoUrl}" alt="">`
+    : `<div class="photo-placeholder">👤</div>`;
+
+  // First summary/profile section → header; rest → body
+  let summaryHtml = '';
+  const bodySections = [];
+  sections.forEach((s, i) => {
+    const t = s.title.toLowerCase();
+    if (i === 0 && (t.includes('summary') || t.includes('profile') || t.includes('objective') || t.includes('about'))) {
+      summaryHtml = `<div class="rh-summary">${s.items.join('')}</div>`;
+    } else {
+      bodySections.push(s);
+    }
+  });
+
+  const mainSections = bodySections.filter(s => !isSideSection(s.title, FANCY1_SIDE));
+  const sideSections = bodySections.filter(s => isSideSection(s.title, FANCY1_SIDE));
+
+  // ── Smart contact bar: extract text from raw HTML paragraphs,
+  //    split on " | " pipe separators, then assign icons by content
+  function contactIcon(txt) {
+    const t = txt.toLowerCase();
+    if (/\+|phone|tel|\d{7,}/.test(t))
+      return `<svg class="rcontact-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2h3l1.5 3.5L6 7a9 9 0 0 0 3 3l1.5-1.5L14 10v3a1 1 0 0 1-1 1A12 12 0 0 1 2 3a1 1 0 0 1 1-1z"/></svg>`;
+    if (/linkedin/.test(t))
+      return `<svg class="rcontact-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M2.5 1A1.5 1.5 0 1 0 2.5 4 1.5 1.5 0 0 0 2.5 1zm-1 5h2v8h-2zm3.5 0h2v1.1C7.4 6.4 8 6 9 6c2 0 3 1.3 3 3.2V14h-2v-4.5c0-1-.4-1.5-1.2-1.5S7.5 8.5 7.5 9.5V14h-2z"/></svg>`;
+    if (/@/.test(t))
+      return `<svg class="rcontact-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="10" rx="2"/><path d="M1 5l7 4 7-4"/></svg>`;
+    if (/github/.test(t))
+      return `<svg class="rcontect-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1C4.1 1 1 4.2 1 8.1c0 3.1 2 5.8 4.9 6.8.4.1.5-.2.5-.4v-1.5c-2 .4-2.4-.5-2.5-.9-.1-.2-.4-.9-.7-1-.2-.1-.5-.4 0-.4s.9.5 1 .7c.6 1 1.6.7 2 .5.1-.4.3-.7.5-.8-1.6-.2-3.3-.8-3.3-3.6 0-.8.3-1.5.8-2-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.6 7.6 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.5.8 1.2.8 2 0 2.8-1.7 3.4-3.3 3.6.3.2.5.7.5 1.4v2.1c0 .2.1.5.5.4A7.1 7.1 0 0 0 15 8.1C15 4.2 11.9 1 8 1z"/></svg>`;
+    if (/globe|web|http|www/.test(t))
+      return `<svg class="rcontact-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2a9 9 0 0 1 0 12M8 2a9 9 0 0 0 0 12"/></svg>`;
+    // location / city fallback
+    return `<svg class="rcontact-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5A4.5 4.5 0 0 0 3.5 6c0 3 4.5 8.5 4.5 8.5S12.5 9 12.5 6A4.5 4.5 0 0 0 8 1.5z"/><circle cx="8" cy="6" r="1.5"/></svg>`;
+  }
+
+  // Extract plain text + links from contact HTML
+  const tmp = document.createElement('div');
+  tmp.innerHTML = contact;
+  // Gather all text nodes joining paragraphs with pipes
+  let rawText = Array.from(tmp.querySelectorAll('p'))
+    .map(p => p.innerText || p.textContent).join(' | ');
+  if (!rawText.trim()) rawText = tmp.innerText || tmp.textContent;
+
+  // Also collect anchor hrefs for reconstruction
+  const anchors = {};
+  tmp.querySelectorAll('a').forEach(a => {
+    anchors[(a.innerText||a.textContent).trim()] = a.href || a.getAttribute('href') || '';
+  });
+
+  const parts = rawText.split(/\s*\|\s*/).map(s=>s.trim()).filter(Boolean);
+
+  let contactBarHtml;
+  if (parts.length > 1) {
+    contactBarHtml = parts.map(part => {
+      const href = anchors[part];
+      const label = href ? `<a href="${href}">${part}</a>` : part;
+      return `<span class="rcontact-item">${contactIcon(part)}${label}</span>`;
+    }).join('');
+  } else {
+    // Fallback: just render raw HTML
+    contactBarHtml = contact;
+  }
+
+  return `
+<div class="tpl-fancy1">
+  <div class="rh-top">
+    ${ph}
+    <div class="rh-info">
+      <h1>${name}</h1>
+      <div class="rsubtitle">${subtitle}</div>
+      ${summaryHtml}
+    </div>
+  </div>
+  <div class="rcontact-bar">${contactBarHtml}</div>
+  <div class="rbody">
+    <div class="col-main">
+      ${mainSections.map(s=>`<div class="rsection"><h2>${s.title}</h2>${s.items.join('')}</div>`).join('')}
+    </div>
+    <div class="col-side">
+      ${sideSections.map(s=>`<div class="rsection"><h2>${s.title}</h2>${s.items.join('')}</div>`).join('')}
+    </div>
+  </div>
+</div>`;
+}
+
+function renderFancy2(data) {
+  const { name, subtitle, contact, sections } = data;
+  const ph = photoUrl
+    ? `<img class="photo" src="${photoUrl}" alt="">`
+    : `<div class="photo-placeholder">👤</div>`;
+
+  const sidebarSections = sections.filter(s => isSideSection(s.title, FANCY2_SIDEBAR));
+  const mainSections    = sections.filter(s => !isSideSection(s.title, FANCY2_SIDEBAR));
+
+  return `
+<div class="tpl-fancy2">
+  <div class="sidebar">
+    ${ph}
+    <div class="sb-name">${name}</div>
+    <div class="sb-subtitle">${subtitle}</div>
+    <div class="sb-sec">
+      <h2>Contact</h2>
+      <div class="sb-contact">${contact}</div>
+    </div>
+    ${sidebarSections.map(s=>`<div class="sb-sec"><h2>${s.title}</h2>${s.items.join('')}</div>`).join('')}
+  </div>
+  <div class="maincol">
+    ${mainSections.map(s=>`<div class="rsection"><h2>${s.title}</h2>${s.items.join('')}</div>`).join('')}
+  </div>
+</div>`;
+}
+
+const renderers = {
+  classic:renderClassic, modern:renderModern, executive:renderExecutive,
+  compact:renderCompact, ats:renderATS,
+  fancy1:renderFancy1, fancy2:renderFancy2
+};
+
+// ===================== UPDATE PREVIEW =====================
+function updatePreview() {
+  const md = document.getElementById('mdEditor').value;
+  const data = parseResume(md);
+  const html = renderers[currentTpl](data);
+  document.getElementById('resumePage').innerHTML = html;
+  updateStats(md);
+  estimatePages();
+}
+
+function updateStats(md) {
+  const words = md.trim() ? md.trim().split(/\s+/).length : 0;
+  document.getElementById('wcount').textContent = words + ' words';
+  document.getElementById('ccount').textContent = md.length + ' chars';
+}
+
+function estimatePages() {
+  const page = document.getElementById('resumePage');
+  const h = page.scrollHeight;
+  const pxPerPage = 1122; // 297mm at 96dpi approx
+  const pages = Math.max(1, Math.round(h / pxPerPage * 10) / 10);
+  document.getElementById('pgcount').textContent = (pages <= 1 ? '1 page' : pages.toFixed(1) + ' pages');
+}
+
+// ===================== EVENTS =====================
+document.getElementById('mdEditor').addEventListener('input', () => {
+  clearTimeout(window._rt);
+  window._rt = setTimeout(updatePreview, 120);
+});
+
+document.getElementById('tplSel').addEventListener('change', e => {
+  currentTpl = e.target.value;
+  document.getElementById('tplname').textContent = tplNames[currentTpl];
+  updatePreview();
+});
+
+document.getElementById('photoInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { photoUrl = ev.target.result; updatePreview(); };
+  reader.readAsDataURL(file);
+});
+
+// ===================== EXPORT PDF =====================
+function exportPDF() {
+  // Show the "disable headers/footers" tip before opening print dialog
+  document.getElementById('printTip').classList.add('show');
+}
+
+function doPrint() {
+  const el = document.getElementById('resumePage');
+
+  // Collect all font/preconnect link tags
+  const fontLinks = Array.from(document.querySelectorAll('link'))
+    .map(l => l.outerHTML).join('\n');
+
+  // Collect template + shared styles, strip app-UI-only rules
+  const skipPatterns = [
+    '.app-header','.editor-panel','.preview-panel','.resize-h','.xloading',
+    '.spinner','@keyframes spin','.app-main','.panel-hdr','.preview-toolbar',
+    '.preview-scroll','.status-bar','.editor-ta','.hactions','.btn','.fmt-sel',
+    '.logo','.hd','.hlabel','.pbadge','.sdot','overflow:hidden','overflow: hidden',
+    'height:100%','height: 100%','.print-tip'
+  ];
+  const styles = Array.from(document.styleSheets)
+    .flatMap(ss => { try { return Array.from(ss.cssRules); } catch(e){ return []; } })
+    .map(r => r.cssText)
+    .filter(r => !skipPatterns.some(p => r.includes(p)))
+    .join('\n');
+
+  const printHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>resume</title>
+${fontLinks}
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #fff; margin: 0; padding: 0; }
+@page { size: A4; margin: 0; }
+${styles}
+* { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+.resume-page { box-shadow: none !important; width: 210mm !important; margin: 0 !important; padding: 0 !important; page-break-after: always; }
+.page-break-hint { display: none !important; }
+</style>
+</head>
+<body>${el.outerHTML}</body>
+</html>`;
+
+  // Open about:blank popup — no URL means no file path shown in print header
+  const win = window.open('', '_blank', 'width=900,height=700');
+  win.document.open();
+  win.document.write(printHtml);
+  win.document.close();
+
+  // Wait for fonts to fully render before printing
+  win.addEventListener('load', () => {
+    setTimeout(() => { win.focus(); win.print(); win.close(); }, 800);
+  });
+}
+
+// ===================== EXPORT DOCX =====================
+function exportDOCX() {
+  const xl = document.getElementById('xl');
+  document.getElementById('xltext').textContent = 'Generating DOCX…';
+  xl.classList.add('show');
+
+  setTimeout(() => {
+    try {
+      const el = document.getElementById('resumePage');
+      const inner = el.innerHTML;
+
+      // Gather all relevant styles
+      const allStyles = Array.from(document.styleSheets)
+        .flatMap(ss => { try { return Array.from(ss.cssRules); } catch(e){ return []; } })
+        .map(r => r.cssText).join('\n');
+
+      const fullHtml = `<!DOCTYPE html>
+<html xmlns:o='urn:schemas-microsoft-com:office:office'
+xmlns:w='urn:schemas-microsoft-com:office:word'
+xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset='utf-8'>
+<style>
+  /* Page setup */
+  @page { size: A4; margin: 0; }
+  body { margin: 0; padding: 0; }
+  /* ATS-safe base */
+  * { box-sizing: border-box; }
+  /* Include template styles */
+  ${allStyles}
+  /* Word-specific overrides */
+  .tpl-classic,.tpl-modern,.tpl-executive,.tpl-compact,.tpl-ats {
+    font-size: 11pt;
+  }
+  .tpl-modern .rh-band { background: #1e3659 !important; -webkit-print-color-adjust: exact; }
+  .tpl-compact h2 { background: #333 !important; color: #fff !important; -webkit-print-color-adjust: exact; }
+  a { color: inherit; text-decoration: none; }
+  img { max-width: 100%; }
+</style>
+</head>
+<body>${inner}</body>
+</html>`;
+
+      const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'resume.doc';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch(e) { alert('DOCX export failed: ' + e.message); }
+    xl.classList.remove('show');
+  }, 100);
+}
+
+// ===================== RESIZE HANDLE =====================
+const rh = document.getElementById('rh');
+const ep = document.getElementById('editorPanel');
+let dragging = false, startX = 0, startW = 0;
+
+rh.addEventListener('mousedown', e => {
+  dragging = true; startX = e.clientX; startW = ep.offsetWidth;
+  rh.classList.add('active'); e.preventDefault();
+});
+document.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const w = Math.max(250, Math.min(startW + e.clientX - startX, window.innerWidth - 300));
+  ep.style.width = w + 'px';
+});
+document.addEventListener('mouseup', () => { dragging = false; rh.classList.remove('active'); });
+
+// ===================== INIT =====================
+document.getElementById('mdEditor').value = SAMPLE;
+document.getElementById('tplname').textContent = tplNames[currentTpl];
+updatePreview();
+</script>
+</body>
+</html>
+`;
