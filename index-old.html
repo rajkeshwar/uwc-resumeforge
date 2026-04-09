@@ -851,33 +851,18 @@ function doPrint() {
   const fontLinks = Array.from(document.querySelectorAll('link'))
     .map(l => l.outerHTML).join('\n');
 
-  // Collect template + shared styles, strip app-UI-only rules.
-  // Filter by selectorText (not full cssText) to avoid accidentally dropping
-  // content rules that happen to contain UI-only values like "overflow:hidden".
-  const uiSelectors = [
-    '.app-header', '.editor-panel', '.preview-panel', '.resize-h', '.xloading',
-    '.spinner', '.app-main', '.panel-hdr', '.preview-toolbar', '.preview-scroll',
-    '.status-bar', '.editor-ta', '.hactions', '.fmt-sel', '.logo', '.hd',
-    '.hlabel', '.pbadge', '.sdot', '.print-tip', '.btn-pdf', '.btn{', '.btn:',
-    '@keyframes spin'
+  // Collect template + shared styles, strip app-UI-only rules
+  const skipPatterns = [
+    '.app-header','.editor-panel','.preview-panel','.resize-h','.xloading',
+    '.spinner','@keyframes spin','.app-main','.panel-hdr','.preview-toolbar',
+    '.preview-scroll','.status-bar','.editor-ta','.hactions','.btn','.fmt-sel',
+    '.logo','.hd','.hlabel','.pbadge','.sdot','overflow:hidden','overflow: hidden',
+    'height:100%','height: 100%','.print-tip'
   ];
-
-  // Drop html/body rules that lock the app layout (overflow, height:100%, flex column)
-  const isAppLayoutRule = r => {
-    const s = r.selectorText || '';
-    return (s === 'html, body' || s === 'html,body' || s === 'html' || s === 'body') &&
-           (r.cssText.includes('overflow') || r.cssText.includes('height:100%') ||
-            r.cssText.includes('display:flex') || r.cssText.includes('flex-direction:column'));
-  };
-
   const styles = Array.from(document.styleSheets)
     .flatMap(ss => { try { return Array.from(ss.cssRules); } catch(e){ return []; } })
-    .filter(r => {
-      if (isAppLayoutRule(r)) return false;
-      const sel = r.selectorText || r.cssText || '';
-      return !uiSelectors.some(u => sel.includes(u));
-    })
     .map(r => r.cssText)
+    .filter(r => !skipPatterns.some(p => r.includes(p)))
     .join('\n');
 
   const printHtml = `<!DOCTYPE html>
@@ -889,29 +874,11 @@ ${fontLinks}
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { background: #fff; margin: 0; padding: 0; }
-
-/* Physical page margin — applies to EVERY printed page top & bottom,
-   giving consistent inter-page gaps. Left/right stay 0 because each
-   template class already carries its own horizontal padding. */
-@page { size: A4; margin: 16mm 0; }
-
+@page { size: A4; margin: 0; }
 ${styles}
-
 * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-
-.resume-page { box-shadow: none !important; width: 210mm !important; margin: 0 !important; page-break-after: always; }
+.resume-page { box-shadow: none !important; width: 210mm !important; margin: 0 !important; padding: 0 !important; page-break-after: always; }
 .page-break-hint { display: none !important; }
-
-/* Zero each template's own top padding so @page margin is the sole
-   top margin and page 1 doesn't get double-margined (template + @page). */
-.tpl-classic                          { padding-top: 0 !important; }
-.tpl-modern .rh-band                  { padding-top: 0 !important; }
-.tpl-executive .rh                    { padding-top: 0 !important; }
-.tpl-compact                          { padding-top: 0 !important; }
-.tpl-ats                              { padding-top: 0 !important; }
-.tpl-fancy1 .rh-top                   { padding-top: 0 !important; }
-.tpl-fancy2 .sidebar,
-.tpl-fancy2 .maincol                  { padding-top: 0 !important; }
 </style>
 </head>
 <body>${el.outerHTML}</body>
